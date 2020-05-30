@@ -1,0 +1,36 @@
+stages:
+  - build
+  - run
+
+
+build_image:
+  stage: build
+  image: docker:19.03.8
+  stage: build
+  services:
+    - docker:19.03.8-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+    - docker run  -e TGBOT_TOKEN -e TGBOT_CHATID -e CF_API -e CF_EMAIL $IMAGE_TAG
+  only:
+    variables:
+       - $CI_COMMIT_MESSAGE =~ /build/
+
+run:
+  stage: run
+  image: docker:19.03.8
+  stage: build
+  services:
+    - docker:19.03.8-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker run  -e TGBOT_TOKEN -e TGBOT_CHATID -e CF_API -e CF_EMAIL $IMAGE_TAG
+  only:
+    variables:
+       - $CRON =~ /TRUE/

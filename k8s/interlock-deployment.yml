@@ -1,0 +1,34 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: interlockd
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: interlockd-job
+        spec:
+          imagePullSecrets:
+          - name: {your_regsecrets_on_k8s}
+          containers:
+          - name: master
+            image: registry.gitlab.com/{your_nickname}/project:{check_lastimage_tag on CI/CD registry} 
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: CF_API
+              value: ""
+            - name: CF_EMAIL
+              value: ""
+            - name: TGBOT_TOKEN
+              value: ""
+            - name: TGBOT_CHATID
+              value: ""
+            - name: INFLUXDB_PASSWORD
+              value: ""
+            - name: DRYRUN
+              value: "true"
+          restartPolicy: OnFailure
