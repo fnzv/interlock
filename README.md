@@ -2,6 +2,8 @@
 
 Interlock is a DNS failover and management tool based on Cloudflare APIs, the main goal of the project is to exclude CDN/site origins relying on HTTP Response codes or latency
 
+Related blog post [here](https://sami.pw/blog/2020-05-30-automatic-failover-interlock)
+
 Here you can find some use-cases:
 - HA on Websites served by multiple datacenters (t.g. static sites, DR sites...)
 - Multi-CDN origins management
