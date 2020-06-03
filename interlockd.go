@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"time"
+	"net"
+	"net/url"
 	"crypto/tls"
 	"os"
 	"log"
@@ -134,12 +136,12 @@ req = req.WithContext(ctx)
 	//client := &http.Client{}
 	resp, err := hc.Do(req)
 	
-  // Show the results
+    // Show the results
   //  log.Printf("\nDNS lookup: %d ms", int(result.DNSLookup/time.Millisecond))
   //  log.Printf("TCP connection: %d ms", int(result.TCPConnection/time.Millisecond))
   //  log.Printf("TLS handshake: %d ms", int(result.TLSHandshake/time.Millisecond))
   //  log.Printf("Server processing: %d ms", int(result.ServerProcessing/time.Millisecond))
-  //  log.Printf("Content transfer: %d ms", int(result.ContentTransfer(time.Now())/time.Millisecond))
+//	log.Printf("Content transfer: %d ms", int(result.ContentTransfer(time.Now())/time.Millisecond))
 	ms_request=int(result.ServerProcessing/time.Millisecond)
 
  if influxdb_host != "" && influxdb_password != "" && influxdb_username != "" {
@@ -171,10 +173,10 @@ req = req.WithContext(ctx)
 	} 
     return "Nope"
 }
-
 var (
 	origins []string
 	dryrun string
+	ip string
 	max_latency int
 	influxdb_host string
 	influxdb_database  string
@@ -230,20 +232,26 @@ i:= 0
   for range origins {
     s := strings.Split(origins[i], " ")
 	domain, uri := s[0], s[1]
+
+	s1 := strings.Split(origins[i], "//")
+	clean_domain := s1[1]
+	ip_dns, err := net.LookupHost(clean_domain)
+	if err != nil {
+	  fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
+	ip = ip_dns[0]
 	fmt.Println("")
 	fmt.Print("Checking "+domain+" on IP "+uri+"...")
 	 i++
 
 	 siteAlive:= checkSiteAlive(domain,uri)
 	if ( siteAlive == "OK") {
-	// Fetch the zone ID
+		  // Fetch the zone ID
     fmt.Print("Origin OK...")
 	id, err := api.ZoneIDByName(domain) // Assuming example.com exists in your Cloudflare account already
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ip := strings.Trim(strings.Trim(uri, "https://") , "http://")
 
 
 				r := cloudflare.DNSRecord{
@@ -258,7 +266,7 @@ i:= 0
 
 				resp, err := api.CreateDNSRecord(id, r) 
 				
-			 
+				 
 	 			if strings.Contains(fmt.Sprintf("%+v\n", resp), "Success:true") {
 					fmt.Println("Creating record ",r.Content,domain)
 				    telegramNotify(fmt.Sprintf("Creating record %s on zone %s",r.Content,domain))
@@ -278,26 +286,51 @@ i:= 0
 if err == nil && len(recs) > 0 {
 	k:= 0
 	for range recs {
-	r := recs[k]
+	//r := recs[k]
+			//	//r.Content = ip
 
 	ip = strings.Trim(strings.Trim(uri, "https://") , "http://")
 
-	    concatenanted_conf:=strings.Join(origins[:], ",")
-		if (!strings.Contains(concatenanted_conf, r.Content) ) {
-			fmt.Println("IP doesnt exists  ",r.Content)
-			fmt.Sprintf("Deleting record %s on %s ",r.Content,domain)
-			if dryrun == "" {
-			err = api.DeleteDNSRecord(id, r.ID)
-				telegramNotify(fmt.Sprintf("Deleting record %s on %s ",r.Content,domain))
-			if err != nil {
-					fmt.Printf("Error: %v\n", err)
-				return
-			}
-
-		}
+	//delete:=0
+	//j:=0
+//	for range origins {
 
 
-		}
+	    //concatenanted_conf:=strings.Join(origins[:], ",")
+		//if (!strings.Contains(concatenanted_conf, r.Content) ) {
+		//	fmt.Println("IP doesnt exists  ",r.Content)
+		//	fmt.Sprintf("Deleting record %s on %s ",r.Content,domain)
+		//	if dryrun == "" {
+		//	err = api.DeleteDNSRecord(id, r.ID)
+		//		telegramNotify(fmt.Sprintf("Deleting record %s on %s ",r.Content,domain))
+		//	if err != nil {
+		//			fmt.Printf("Error: %v\n", err)
+		//		return
+		//	}
+//
+		//}
+//
+//
+		//}
+		//fmt.Println("check if  "+ip+" exist on conf")
+	//	fmt.Println(s[1][i])
+ 		//if r.Content != ip {
+			//	//r.Content = ip
+		///r.Proxied = true
+			//	err = api.UpdateDNSRecord(id, r.ID, r)
+	//		fmt.Println("IP not equal to origin")
+	//		delete++
+		
+	//	}
+
+
+ //j++
+//	}
+    // concatena gli ip della conf in una stringa
+	//se la conf non contiene l'ip remoto rimuovi l'ip remoto  
+
+
+//	fmt.Println("Delete flag ",delete)
 
 k++
 	}
@@ -308,7 +341,7 @@ k++
 	  }
 	if (siteAlive == "Nope" || siteAlive == "KO") {
 	   id, err := api.ZoneIDByName(domain) // Assuming example.com exists in your Cloudflare account already
-			
+        
 				recs, err := api.DNSRecords(id, cloudflare.DNSRecord{Type: "A", Name: domain} )
 				j:=0
 				for range recs { /// LOOP DNS  RECORDS ON CF
@@ -335,13 +368,22 @@ k++
 						
 					j++
 					
-					} // if record 
+					}
 	
 
-	   } // for records on CF
+	}
 
-    } //if KO
 
-  } //for origins
 
-} //main
+
+
+
+
+  
+
+}
+
+
+  }
+
+}
